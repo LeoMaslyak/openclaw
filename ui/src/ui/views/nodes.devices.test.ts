@@ -47,7 +47,7 @@ function baseProps(overrides: Partial<NodesProps> = {}): NodesProps {
 }
 
 describe("nodes devices pending rendering", () => {
-  it("shows pending role and scopes from effective pending auth", () => {
+  it("shows requested and approved access for a scope upgrade", () => {
     const container = document.createElement("div");
     render(
       renderNodes(
@@ -63,7 +63,14 @@ describe("nodes devices pending rendering", () => {
                 ts: Date.now(),
               },
             ],
-            paired: [],
+            paired: [
+              {
+                deviceId: "device-1",
+                displayName: "Device One",
+                roles: ["operator"],
+                scopes: ["operator.read"],
+              },
+            ],
           },
         }),
       ),
@@ -71,8 +78,10 @@ describe("nodes devices pending rendering", () => {
     );
 
     const text = container.textContent ?? "";
-    expect(text).toContain("role: operator");
-    expect(text).toContain("scopes: operator.admin, operator.read");
+    expect(text).toContain("scope upgrade requires approval");
+    expect(text).toContain("requested: roles: operator");
+    expect(text).toContain("approved now: roles: operator");
+    expect(text).toContain("operator.admin, operator.read");
   });
 
   it("falls back to roles when role is absent", () => {
@@ -98,7 +107,7 @@ describe("nodes devices pending rendering", () => {
     );
 
     const text = container.textContent ?? "";
-    expect(text).toContain("role: node, operator");
+    expect(text).toContain("requested: roles: node, operator");
     expect(text).toContain("scopes: operator.read");
   });
 });

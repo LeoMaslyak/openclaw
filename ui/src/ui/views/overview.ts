@@ -86,6 +86,11 @@ export function renderOverview(props: OverviewProps) {
       <div class="muted" style="margin-top: 8px">
         ${t("overview.pairing.hint")}
         <div style="margin-top: 6px">
+          If the device was already paired, this usually means it asked for more access than you
+          previously approved. OpenClaw keeps the old approval and creates a new pending upgrade
+          request instead of widening scopes silently.
+        </div>
+        <div style="margin-top: 6px">
           <span class="mono">openclaw devices list</span><br />
           <span class="mono">openclaw devices approve &lt;requestId&gt;</span>
         </div>
