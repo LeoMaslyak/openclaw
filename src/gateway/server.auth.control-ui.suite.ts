@@ -1025,6 +1025,26 @@ export function registerControlUiAndPairingSuite(): void {
       expect(
         (upgrade.error?.details as { code?: string; reason?: string } | undefined)?.reason,
       ).toBe("role-upgrade");
+      expect(
+        (
+          upgrade.error?.details as
+            | {
+                requestedRole?: string;
+                approvedRoles?: string[];
+              }
+            | undefined
+        )?.requestedRole,
+      ).toBe("node");
+      expect(
+        (
+          upgrade.error?.details as
+            | {
+                requestedRole?: string;
+                approvedRoles?: string[];
+              }
+            | undefined
+        )?.approvedRoles,
+      ).toEqual(["operator"]);
 
       const pending = (await listDevicePairing()).pending.filter(
         (entry) => entry.deviceId === identity.deviceId,
@@ -1285,6 +1305,54 @@ export function registerControlUiAndPairingSuite(): void {
       });
       expect(upgraded.ok).toBe(false);
       expect(upgraded.error?.message ?? "").toContain("pairing required");
+      expect(
+        (
+          upgraded.error?.details as
+            | {
+                reason?: string;
+                requestedRole?: string;
+                requestedScopes?: string[];
+                approvedScopes?: string[];
+              }
+            | undefined
+        )?.reason,
+      ).toBe("scope-upgrade");
+      expect(
+        (
+          upgraded.error?.details as
+            | {
+                reason?: string;
+                requestedRole?: string;
+                requestedScopes?: string[];
+                approvedScopes?: string[];
+              }
+            | undefined
+        )?.requestedRole,
+      ).toBe("operator");
+      expect(
+        (
+          upgraded.error?.details as
+            | {
+                reason?: string;
+                requestedRole?: string;
+                requestedScopes?: string[];
+                approvedScopes?: string[];
+              }
+            | undefined
+        )?.requestedScopes,
+      ).toEqual(["operator.admin"]);
+      expect(
+        (
+          upgraded.error?.details as
+            | {
+                reason?: string;
+                requestedRole?: string;
+                requestedScopes?: string[];
+                approvedScopes?: string[];
+              }
+            | undefined
+        )?.approvedScopes,
+      ).toEqual(["operator.read"]);
       wsUpgrade.close();
 
       const pendingUpgrade = (await listDevicePairing()).pending.find(
