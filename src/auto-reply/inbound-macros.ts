@@ -40,7 +40,9 @@ interface ManifestShape {
 
 export function getInboundMacrosManifestPath(): string {
   const override = process.env.OPENCLAW_INBOUND_MACROS_FILE;
-  if (override && override.trim().length > 0) return override;
+  if (override && override.trim().length > 0) {
+    return override;
+  }
   return join(homedir(), DEFAULT_MACROS_DIR, DEFAULT_MACROS_FILENAME);
 }
 
@@ -49,7 +51,9 @@ let cachedMacros: Record<string, string> | null = null;
 let cachedMtimeMs = 0;
 
 function loadMacrosFromDisk(path: string): Record<string, string> | null {
-  if (!existsSync(path)) return null;
+  if (!existsSync(path)) {
+    return null;
+  }
   let size: number;
   let mtimeMs: number;
   try {
@@ -59,7 +63,9 @@ function loadMacrosFromDisk(path: string): Record<string, string> | null {
   } catch {
     return null;
   }
-  if (size <= 0 || size > MAX_MACRO_FILE_BYTES) return null;
+  if (size <= 0 || size > MAX_MACRO_FILE_BYTES) {
+    return null;
+  }
   if (path === cachedManifestPath && mtimeMs === cachedMtimeMs && cachedMacros) {
     return cachedMacros;
   }
@@ -69,11 +75,17 @@ function loadMacrosFromDisk(path: string): Record<string, string> | null {
   } catch {
     return null;
   }
-  if (!parsed || typeof parsed !== "object" || !parsed.macros) return null;
+  if (!parsed || typeof parsed !== "object" || !parsed.macros) {
+    return null;
+  }
   const macros: Record<string, string> = {};
   for (const [k, v] of Object.entries(parsed.macros)) {
-    if (typeof k !== "string" || !k.startsWith("!")) continue;
-    if (typeof v !== "string" || v.trim().length === 0) continue;
+    if (typeof k !== "string" || !k.startsWith("!")) {
+      continue;
+    }
+    if (typeof v !== "string" || v.trim().length === 0) {
+      continue;
+    }
     macros[k] = v.trim();
   }
   cachedManifestPath = path;
@@ -100,17 +112,23 @@ export function expandInboundMacros(
   text: string,
   macros: Record<string, string> = loadInboundMacros(),
 ): string {
-  if (!text) return text;
+  if (!text) {
+    return text;
+  }
   // Preserve any leading whitespace so we don't accidentally change
   // indentation-sensitive code samples.
   const leadingWhitespace = text.match(/^\s*/)?.[0] ?? "";
   const body = text.slice(leadingWhitespace.length);
-  if (!body.startsWith("!")) return text;
+  if (!body.startsWith("!")) {
+    return text;
+  }
   const firstSpace = body.search(/\s/);
   const token = firstSpace === -1 ? body : body.slice(0, firstSpace);
   const rest = firstSpace === -1 ? "" : body.slice(firstSpace);
   const expansion = macros[token];
-  if (!expansion) return text;
+  if (!expansion) {
+    return text;
+  }
   return `${leadingWhitespace}${expansion}${rest}`;
 }
 

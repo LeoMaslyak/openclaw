@@ -24,11 +24,7 @@ describe("local-loader allowed-tools notice", () => {
 
   function writeSkill(dir: string, frontmatter: string) {
     fs.mkdirSync(dir, { recursive: true });
-    fs.writeFileSync(
-      path.join(dir, "SKILL.md"),
-      `---\n${frontmatter}\n---\n\nbody\n`,
-      "utf-8",
-    );
+    fs.writeFileSync(path.join(dir, "SKILL.md"), `---\n${frontmatter}\n---\n\nbody\n`, "utf-8");
   }
 
   async function loadOnce(skillDir: string) {
@@ -44,8 +40,8 @@ describe("local-loader allowed-tools notice", () => {
     );
     await loadOnce(skillDir);
     const ours = writeSpy.mock.calls
-      .map((call) => String(call[0]))
-      .filter((msg) => msg.includes(`skill "my-retro-fixture-skill"`));
+      .map((call: unknown[]) => String(call[0]))
+      .filter((msg: string) => msg.includes(`skill "my-retro-fixture-skill"`));
     expect(ours.length).toBe(1);
     expect(ours[0]).toContain(
       `skill "my-retro-fixture-skill" declares allowed-tools: Read, Grep, Glob`,
@@ -58,8 +54,8 @@ describe("local-loader allowed-tools notice", () => {
     writeSkill(skillDir, "name: my-plain-fixture-skill\ndescription: no policy");
     await loadOnce(skillDir);
     const loggedCalls = writeSpy.mock.calls
-      .map((call) => String(call[0]))
-      .filter((msg) => msg.includes(`skill "my-plain-fixture-skill"`));
+      .map((call: unknown[]) => String(call[0]))
+      .filter((msg: string) => msg.includes(`skill "my-plain-fixture-skill"`));
     expect(loggedCalls.length).toBe(0);
   });
 
@@ -69,8 +65,8 @@ describe("local-loader allowed-tools notice", () => {
     writeSkill(skillDir, "name: my-gated-fixture-skill\ndescription: x\nallowed-tools: Read");
     await loadOnce(skillDir);
     const loggedCalls = writeSpy.mock.calls
-      .map((call) => String(call[0]))
-      .filter((msg) => msg.includes(`skill "my-gated-fixture-skill"`));
+      .map((call: unknown[]) => String(call[0]))
+      .filter((msg: string) => msg.includes(`skill "my-gated-fixture-skill"`));
     expect(loggedCalls.length).toBe(0);
   });
 
@@ -81,8 +77,8 @@ describe("local-loader allowed-tools notice", () => {
     await loadOnce(skillDir);
     await loadOnce(skillDir);
     const ours = writeSpy.mock.calls
-      .map((call) => String(call[0]))
-      .filter((msg) => msg.includes('skill "my-once-fixture-skill"'));
+      .map((call: unknown[]) => String(call[0]))
+      .filter((msg: string) => msg.includes('skill "my-once-fixture-skill"'));
     expect(ours.length).toBe(1);
   });
 });
