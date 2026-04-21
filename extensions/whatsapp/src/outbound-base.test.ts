@@ -89,6 +89,49 @@ describe("createWhatsAppOutboundBase", () => {
     );
   });
 
+  it("keeps explicit mediaUrl first when payload also includes mediaUrls", async () => {
+    const sendMessageWhatsApp = vi.fn(async () => ({
+      messageId: "msg-1",
+      toJid: "15551234567@s.whatsapp.net",
+    }));
+    const outbound = createWhatsAppOutboundBase({
+      chunker: (text) => [text],
+      sendMessageWhatsApp,
+      sendPollWhatsApp: vi.fn(),
+      shouldLogVerbose: () => false,
+      resolveTarget: ({ to }) => ({ ok: true as const, to: to ?? "" }),
+    });
+
+    await outbound.sendPayload!({
+      cfg: {} as never,
+      to: "whatsapp:+15551234567",
+      text: "",
+      payload: {
+        text: "\n\ncaption",
+        mediaUrl: "/tmp/primary.ogg",
+        mediaUrls: [" /tmp/secondary.ogg "],
+      },
+      deps: { sendWhatsApp: sendMessageWhatsApp },
+    });
+
+    expect(sendMessageWhatsApp).toHaveBeenNthCalledWith(
+      1,
+      "whatsapp:+15551234567",
+      "caption",
+      expect.objectContaining({
+        mediaUrl: "/tmp/primary.ogg",
+      }),
+    );
+    expect(sendMessageWhatsApp).toHaveBeenNthCalledWith(
+      2,
+      "whatsapp:+15551234567",
+      "",
+      expect.objectContaining({
+        mediaUrl: "/tmp/secondary.ogg",
+      }),
+    );
+  });
+
   it("threads cfg into sendPollWhatsApp call", async () => {
     const sendPollWhatsApp = vi.fn(async () => ({
       messageId: "wa-poll-1",

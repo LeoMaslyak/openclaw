@@ -64,6 +64,12 @@ function mockFirstReplyFailure(msg: WebInboundMsg, message: string) {
   );
 }
 
+function mockFirstReplyFailureWithWrappedError(msg: WebInboundMsg, message: string) {
+  (msg.reply as unknown as { mockRejectedValueOnce: (v: unknown) => void }).mockRejectedValueOnce({
+    error: { message },
+  });
+}
+
 function mockSecondReplySuccess(msg: WebInboundMsg) {
   (msg.reply as unknown as { mockResolvedValueOnce: (v: unknown) => void }).mockResolvedValueOnce(
     undefined,
@@ -159,6 +165,24 @@ describe("deliverWebReply", () => {
       expect(sleep).toHaveBeenCalledWith(500);
     },
   );
+
+  it("retries text send on wrapped transient failure", async () => {
+    const msg = makeMsg();
+    mockFirstReplyFailureWithWrappedError(msg, "connection closed");
+    mockSecondReplySuccess(msg);
+
+    await deliverWebReply({
+      replyResult: { text: "hi" },
+      msg,
+      maxMediaBytes: 1024 * 1024,
+      textLimit: 200,
+      replyLogger,
+      skipLog: true,
+    });
+
+    expect(msg.reply).toHaveBeenCalledTimes(2);
+    expect(sleep).toHaveBeenCalledWith(500);
+  });
 
   it("sends image media with caption and then remaining text", async () => {
     const msg = makeMsg();

@@ -17,6 +17,7 @@ let sendPollWhatsApp: typeof import("./send.js").sendPollWhatsApp;
 let sendReactionWhatsApp: typeof import("./send.js").sendReactionWhatsApp;
 let resetLogger: typeof import("openclaw/plugin-sdk/runtime-env").resetLogger;
 let setLoggerOverride: typeof import("openclaw/plugin-sdk/runtime-env").setLoggerOverride;
+let sleep: typeof import("./text-runtime.js").sleep;
 
 vi.mock("./connection-controller-registry.js", async () => {
   const actual = await vi.importActual<typeof import("./connection-controller-registry.js")>(
@@ -45,6 +46,14 @@ vi.mock("./outbound-media.runtime.js", async () => {
   };
 });
 
+vi.mock("./text-runtime.js", async () => {
+  const actual = await vi.importActual<typeof import("./text-runtime.js")>("./text-runtime.js");
+  return {
+    ...actual,
+    sleep: vi.fn(async () => {}),
+  };
+});
+
 describe("web outbound", () => {
   const sendComposingTo = vi.fn(async () => {});
   const sendMessage = vi.fn(async () => ({ messageId: "msg123" }));
@@ -54,6 +63,7 @@ describe("web outbound", () => {
   beforeAll(async () => {
     ({ sendMessageWhatsApp, sendPollWhatsApp, sendReactionWhatsApp } = await import("./send.js"));
     ({ resetLogger, setLoggerOverride } = await import("openclaw/plugin-sdk/runtime-env"));
+    ({ sleep } = await import("./text-runtime.js"));
   });
 
   beforeEach(() => {
@@ -249,6 +259,43 @@ describe("web outbound", () => {
       toJid: "1555@s.whatsapp.net",
     });
     expect(sendMessage).toHaveBeenCalledTimes(2);
+  });
+
+  it("retries wrapped transient outbound send failures", async () => {
+    sendMessage.mockRejectedValueOnce({ error: { message: "connection closed" } });
+    sendMessage.mockResolvedValueOnce({ messageId: "msg789" });
+
+    const result = await sendMessageWhatsApp("+1555", "hi", { verbose: false });
+
+    expect(result).toEqual({
+      messageId: "msg789",
+      toJid: "1555@s.whatsapp.net",
+    });
+    expect(sendMessage).toHaveBeenCalledTimes(2);
+    expect(sleep).toHaveBeenCalledWith(500);
+  });
+
+  it("prefers explicit mediaUrl over mediaUrls when both are present", async () => {
+    const buf = Buffer.from("img");
+    loadWebMediaMock.mockResolvedValueOnce({
+      buffer: buf,
+      contentType: "image/jpeg",
+      kind: "image",
+    });
+
+    await sendMessageWhatsApp("+1555", "pic", {
+      verbose: false,
+      mediaUrl: "/tmp/primary.jpg",
+      mediaUrls: [" /tmp/secondary.jpg "],
+    });
+
+    expect(loadWebMediaMock).toHaveBeenCalledWith(
+      "/tmp/primary.jpg",
+      expect.objectContaining({
+        hostReadCapability: false,
+      }),
+    );
+    expect(sendMessage).toHaveBeenLastCalledWith("+1555", "pic", buf, "image/jpeg");
   });
 
   it("falls back to the first mediaUrls entry when mediaUrl is omitted", async () => {

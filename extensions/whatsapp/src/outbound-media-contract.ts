@@ -1,4 +1,4 @@
-import { resolveOutboundMediaUrls } from "openclaw/plugin-sdk/reply-payload";
+import { formatError } from "./session-errors.js";
 import { sleep } from "./text-runtime.js";
 
 type WhatsAppOutboundPayloadLike = {
@@ -28,10 +28,14 @@ export function normalizeWhatsAppPayloadText(text: string | undefined): string {
 export function resolveWhatsAppOutboundMediaUrls(
   payload: Pick<WhatsAppOutboundPayloadLike, "mediaUrl" | "mediaUrls">,
 ): string[] {
-  const mediaUrls = payload.mediaUrls?.length
-    ? [...payload.mediaUrls]
-    : resolveOutboundMediaUrls({ mediaUrl: payload.mediaUrl, mediaUrls: undefined });
-  return mediaUrls.map((entry) => entry.trim()).filter(Boolean);
+  const primaryMediaUrl = payload.mediaUrl?.trim();
+  const mediaUrls = (payload.mediaUrls ? [...payload.mediaUrls] : [])
+    .map((entry) => entry.trim())
+    .filter((entry): entry is string => Boolean(entry));
+  const orderedMediaUrls = [primaryMediaUrl, ...mediaUrls].filter((entry): entry is string =>
+    Boolean(entry),
+  );
+  return Array.from(new Set(orderedMediaUrls));
 }
 
 // Keep new WhatsApp outbound-media behavior in this helper so payload, gateway, and auto-reply paths stay aligned.
@@ -74,8 +78,7 @@ export function normalizeWhatsAppLoadedMedia(
 }
 
 export function isRetryableWhatsAppOutboundError(error: unknown): boolean {
-  const errorText = error instanceof Error ? error.message : String(error);
-  return /closed|reset|timed\s*out|disconnect/i.test(errorText);
+  return /closed|reset|timed\s*out|disconnect/i.test(formatError(error));
 }
 
 export async function sendWhatsAppOutboundWithRetry<T>(params: {
@@ -96,7 +99,7 @@ export async function sendWhatsAppOutboundWithRetry<T>(params: {
       return await params.send();
     } catch (error) {
       lastError = error;
-      const errorText = error instanceof Error ? error.message : String(error);
+      const errorText = formatError(error);
       const isLastAttempt = attempt === maxAttempts;
       if (!isRetryableWhatsAppOutboundError(error) || isLastAttempt) {
         throw error;
