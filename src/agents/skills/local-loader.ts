@@ -19,10 +19,16 @@ function emitAllowedToolsNotice(
   skillName: string,
   frontmatter: ParsedSkillFrontmatter,
 ): void {
-  if (process.env.OPENCLAW_DISABLE_ALLOWED_TOOLS_NOTICE === "1") return;
+  if (process.env.OPENCLAW_DISABLE_ALLOWED_TOOLS_NOTICE === "1") {
+    return;
+  }
   const allowed = parseAllowedTools(frontmatter);
-  if (allowed === null) return;
-  if (ALLOWED_TOOLS_NOTICE_EMITTED.has(filePath)) return;
+  if (allowed === null) {
+    return;
+  }
+  if (ALLOWED_TOOLS_NOTICE_EMITTED.has(filePath)) {
+    return;
+  }
   ALLOWED_TOOLS_NOTICE_EMITTED.add(filePath);
   const list = allowed.length === 0 ? "<empty>" : allowed.join(", ");
   process.stderr.write(
@@ -133,7 +139,7 @@ function listCandidateSkillDirs(dir: string): string[] {
           entry.isDirectory() && !entry.name.startsWith(".") && entry.name !== "node_modules",
       )
       .map((entry) => path.join(dir, entry.name))
-      .sort((left, right) => left.localeCompare(right));
+      .toSorted((left, right) => left.localeCompare(right));
   } catch {
     return [];
   }

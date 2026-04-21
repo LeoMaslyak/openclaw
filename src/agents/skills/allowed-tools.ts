@@ -30,13 +30,23 @@ const LIST_TRIM_RE = /^[\s[{]+|[\s\]}]+$/g;
  * - `[]` when the skill declares `allowed-tools` but the list is empty (explicit denial of everything).
  * - `string[]` of unique, trimmed tool names otherwise.
  */
-export function parseAllowedTools(frontmatter: ParsedSkillFrontmatter | undefined): string[] | null {
-  if (!frontmatter) return null;
+export function parseAllowedTools(
+  frontmatter: ParsedSkillFrontmatter | undefined,
+): string[] | null {
+  if (!frontmatter) {
+    return null;
+  }
   const raw = frontmatter["allowed-tools"] ?? frontmatter["allowedTools"];
-  if (raw === undefined) return null;
-  if (typeof raw !== "string") return null;
+  if (raw === undefined) {
+    return null;
+  }
+  if (typeof raw !== "string") {
+    return null;
+  }
   const stripped = raw.replace(LIST_TRIM_RE, "");
-  if (!stripped) return [];
+  if (!stripped) {
+    return [];
+  }
   const pieces = stripped
     .split(/[,\n]/)
     .map((p) => p.trim())
@@ -45,7 +55,9 @@ export function parseAllowedTools(frontmatter: ParsedSkillFrontmatter | undefine
   const seen = new Set<string>();
   const out: string[] = [];
   for (const p of pieces) {
-    if (seen.has(p)) continue;
+    if (seen.has(p)) {
+      continue;
+    }
     seen.add(p);
     out.push(p);
   }
@@ -66,8 +78,12 @@ export function parseAllowedTools(frontmatter: ParsedSkillFrontmatter | undefine
  * initial rollout; hard denial is a separate, future opt-in layer.
  */
 export function skillAllowsTool(allowed: string[] | null, toolName: string): boolean {
-  if (allowed === null) return true;
-  if (allowed.length === 0) return false;
+  if (allowed === null) {
+    return true;
+  }
+  if (allowed.length === 0) {
+    return false;
+  }
   return allowed.includes(toolName);
 }
 
