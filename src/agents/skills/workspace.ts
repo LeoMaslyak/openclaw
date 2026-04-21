@@ -62,12 +62,14 @@ function resolveCompactHomePrefixes(): string[] {
     .filter((home): home is string => !!home);
   return [...resolvedHomes, ...realHomes]
     .filter((home, index, all) => all.indexOf(home) === index)
-    .sort((a, b) => b.length - a.length);
+    .toSorted((a, b) => b.length - a.length);
 }
 
 function compactSkillPaths(skills: Skill[]): Skill[] {
   const homes = resolveCompactHomePrefixes();
-  if (homes.length === 0) return skills;
+  if (homes.length === 0) {
+    return skills;
+  }
   return skills.map((s) => ({
     ...s,
     filePath: compactHomePath(s.filePath, homes),
@@ -90,12 +92,12 @@ function compactPathForConsoleMessage(filePath: string): string {
 
 function isSkillVisibleInAvailableSkillsPrompt(entry: SkillEntry): boolean {
   if (entry.exposure) {
-    return entry.exposure.includeInAvailableSkillsPrompt !== false;
+    return entry.exposure.includeInAvailableSkillsPrompt;
   }
   if (entry.invocation) {
-    return entry.invocation.disableModelInvocation !== true;
+    return !entry.invocation.disableModelInvocation;
   }
-  return entry.skill.disableModelInvocation !== true;
+  return !entry.skill.disableModelInvocation;
 }
 
 function filterSkillEntries(
@@ -161,8 +163,12 @@ function listChildDirectories(dir: string): string[] {
     const entries = fs.readdirSync(dir, { withFileTypes: true });
     const dirs: string[] = [];
     for (const entry of entries) {
-      if (entry.name.startsWith(".")) continue;
-      if (entry.name === "node_modules") continue;
+      if (entry.name.startsWith(".")) {
+        continue;
+      }
+      if (entry.name === "node_modules") {
+        continue;
+      }
       const fullPath = path.join(dir, entry.name);
       if (entry.isDirectory()) {
         dirs.push(entry.name);
@@ -440,7 +446,7 @@ function loadSkillEntries(
     const suspicious = childDirs.length > limits.maxCandidatesPerRoot;
 
     const maxCandidates = Math.max(0, limits.maxSkillsLoadedPerSource);
-    const limitedChildren = childDirs.slice().sort().slice(0, maxCandidates);
+    const limitedChildren = childDirs.toSorted().slice(0, maxCandidates);
 
     if (suspicious) {
       skillsLogger.warn("Skills root looks suspiciously large, truncating discovery.", {
@@ -501,8 +507,11 @@ function loadSkillEntries(
         continue;
       }
 
+      // Use the real resolved dir (parent of skillMdRealPath) so that
+      // symlinked SKILL.md files (e.g. gstack shims in extraDirs) are read
+      // from their real location and pass the rejectPathSymlink check.
       const loaded = loadSkillsFromDirSafe({
-        dir: skillDir,
+        dir: path.dirname(skillMdRealPath),
         source: params.source,
         maxBytes: limits.maxSkillFileBytes,
       });
@@ -522,8 +531,7 @@ function loadSkillEntries(
 
     if (loadedSkills.length > limits.maxSkillsLoadedPerSource) {
       return loadedSkills
-        .slice()
-        .sort((a, b) => a.skill.name.localeCompare(b.skill.name, "en"))
+        .toSorted((a, b) => a.skill.name.localeCompare(b.skill.name, "en"))
         .slice(0, limits.maxSkillsLoadedPerSource);
     }
 
@@ -598,7 +606,7 @@ function loadSkillEntries(
   }
 
   const skillEntries: SkillEntry[] = Array.from(merged.values())
-    .sort((a, b) => a.skill.name.localeCompare(b.skill.name, "en"))
+    .toSorted((a, b) => a.skill.name.localeCompare(b.skill.name, "en"))
     .map((record) => {
       const skill = record.skill;
       const frontmatter =
@@ -620,8 +628,8 @@ function loadSkillEntries(
           // Freshly loaded entries preserve the documented disable-model-invocation
           // contract, while legacy entries without exposure metadata still use the
           // fallback in isSkillVisibleInAvailableSkillsPrompt().
-          includeInAvailableSkillsPrompt: invocation.disableModelInvocation !== true,
-          userInvocable: invocation.userInvocable !== false,
+          includeInAvailableSkillsPrompt: !invocation.disableModelInvocation,
+          userInvocable: invocation.userInvocable,
         },
       };
     });
@@ -643,7 +651,9 @@ function escapeXml(str: string): string {
  * preserving awareness of all skills before resorting to dropping.
  */
 export function formatSkillsCompact(skills: Skill[]): string {
-  if (skills.length === 0) return "";
+  if (skills.length === 0) {
+    return "";
+  }
   const lines = [
     "\n\nThe following skills provide specialized instructions for specific tasks.",
     "Use the read tool to load a skill's file when the task matches its name.",
@@ -788,9 +798,9 @@ function resolveWorkspaceSkillPromptState(
   // Budget checks and final render both use this same representation so the
   // tier decision is based on the exact strings that end up in the prompt.
   // resolvedSkills keeps canonical paths for snapshot / runtime consumers.
-  const promptSkills = compactSkillPaths(resolvedSkills)
-    .slice()
-    .sort((a, b) => a.name.localeCompare(b.name, "en"));
+  const promptSkills = compactSkillPaths(resolvedSkills).toSorted((a, b) =>
+    a.name.localeCompare(b.name, "en"),
+  );
   const { skillsForPrompt, truncated, compact } = applySkillsPromptLimits({
     skills: promptSkills,
     config: opts?.config,

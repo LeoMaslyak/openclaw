@@ -16,7 +16,9 @@ describe("local-loader allowed-tools notice", () => {
 
   afterEach(async () => {
     writeSpy.mockRestore();
-    if (tmp) await fs.promises.rm(tmp, { recursive: true, force: true });
+    if (tmp) {
+      await fs.promises.rm(tmp, { recursive: true, force: true });
+    }
     const mod = await import("./local-loader.js");
     mod.__resetAllowedToolsNoticeCacheForTest();
     delete process.env.OPENCLAW_DISABLE_ALLOWED_TOOLS_NOTICE;
@@ -27,7 +29,7 @@ describe("local-loader allowed-tools notice", () => {
     fs.writeFileSync(path.join(dir, "SKILL.md"), `---\n${frontmatter}\n---\n\nbody\n`, "utf-8");
   }
 
-  async function loadOnce(skillDir: string) {
+  async function loadOnce(_skillDir: string) {
     const { loadWorkspaceSkillEntries } = await import("../skills.js");
     return loadWorkspaceSkillEntries(tmp, {});
   }
