@@ -9,6 +9,7 @@ import {
 } from "./command-registry-core.js";
 import type { ProgramContext } from "./context.js";
 import { registerSubCliCommands } from "./register.subclis.js";
+import { registerUserCliExtensions } from "./register.user-extensions.js";
 
 export {
   getCoreCliCommandDescriptors,
@@ -26,4 +27,5 @@ export function registerProgramCommands(
 ) {
   registerCoreCliCommands(program, ctx, argv);
   registerSubCliCommands(program, argv);
+  registerUserCliExtensions(program, ctx);
 }
