@@ -6,6 +6,7 @@ import {
 import { listChatCommands, listChatCommandsForConfig } from "./commands-registry-list.js";
 import { normalizeCommandBody } from "./commands-registry-normalize.js";
 import type { CommandNormalizeOptions } from "./commands-registry.types.js";
+import { expandInboundMacros } from "./inbound-macros.js";
 import { isAbortTrigger } from "./reply/abort-primitives.js";
 import { stripInboundMetadata } from "./reply/strip-inbound-meta.js";
 
@@ -21,7 +22,7 @@ export function hasControlCommand(
   if (!trimmed) {
     return false;
   }
-  const stripped = stripInboundMetadata(trimmed);
+  const stripped = expandInboundMacros(stripInboundMetadata(trimmed));
   if (!stripped) {
     return false;
   }
@@ -66,7 +67,7 @@ export function isControlCommandMessage(
   if (hasControlCommand(trimmed, cfg, options)) {
     return true;
   }
-  const stripped = stripInboundMetadata(trimmed);
+  const stripped = expandInboundMacros(stripInboundMetadata(trimmed));
   const normalized =
     normalizeOptionalLowercaseString(normalizeCommandBody(stripped, options)) ?? "";
   return isAbortTrigger(normalized);
