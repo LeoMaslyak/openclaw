@@ -245,7 +245,9 @@ export async function resolveReplyDirectives(params: {
 
   // Only load workspace skill commands when we actually need them to filter aliases.
   // This avoids scanning skills for messages that only use plain text with no slash syntax.
-  const skillCommands =
+  // Return undefined (not []) when not loaded so handleInlineActions can tell the difference
+  // between "not pre-loaded" and "loaded but empty", and will do its own lookup when undefined.
+  const skillCommands: SkillCommandSpec[] | undefined =
     allowTextCommands && commandTextHasSlash && rawAliases.length > 0
       ? (await loadSkillCommands()).listSkillCommandsForWorkspace({
           workspaceDir,
@@ -253,8 +255,8 @@ export async function resolveReplyDirectives(params: {
           agentId,
           skillFilter,
         })
-      : [];
-  reserveSkillCommandNames({ reservedCommands, skillCommands });
+      : undefined;
+  reserveSkillCommandNames({ reservedCommands, skillCommands: skillCommands ?? [] });
 
   const configuredAliases = rawAliases.filter(
     (alias) => !reservedCommands.has(normalizeLowercaseStringOrEmpty(alias)),
