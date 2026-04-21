@@ -1,6 +1,7 @@
 import { normalizeChatType } from "../../channels/chat-type.js";
 import { resolveConversationLabel } from "../../channels/conversation-label.js";
 import { normalizeOptionalString } from "../../shared/string-coerce.js";
+import { expandInboundMacros } from "../inbound-macros.js";
 import type { FinalizedMsgContext, MsgContext } from "../templating.js";
 import { normalizeInboundTextNewlines, sanitizeInboundSystemTags } from "./inbound-text.js";
 
@@ -68,8 +69,8 @@ export function finalizeInboundContext<T extends Record<string, unknown>>(
       normalized.CommandBody ??
       normalized.RawBody ??
       normalized.Body);
-  normalized.BodyForAgent = sanitizeInboundSystemTags(
-    normalizeInboundTextNewlines(bodyForAgentSource),
+  normalized.BodyForAgent = expandInboundMacros(
+    sanitizeInboundSystemTags(normalizeInboundTextNewlines(bodyForAgentSource)),
   );
 
   const bodyForCommandsSource = opts.forceBodyForCommands
@@ -78,8 +79,8 @@ export function finalizeInboundContext<T extends Record<string, unknown>>(
       normalized.CommandBody ??
       normalized.RawBody ??
       normalized.Body);
-  normalized.BodyForCommands = sanitizeInboundSystemTags(
-    normalizeInboundTextNewlines(bodyForCommandsSource),
+  normalized.BodyForCommands = expandInboundMacros(
+    sanitizeInboundSystemTags(normalizeInboundTextNewlines(bodyForCommandsSource)),
   );
 
   const explicitLabel = normalizeOptionalString(normalized.ConversationLabel);

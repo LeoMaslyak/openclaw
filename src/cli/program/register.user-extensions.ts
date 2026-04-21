@@ -1,8 +1,8 @@
+import { spawn } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
 import type { Command } from "commander";
-import { spawn } from "node:child_process";
 import type { ProgramContext } from "./context.js";
 
 /**
@@ -49,11 +49,15 @@ function shouldSkipExtensions(): boolean {
 }
 
 function loadManifest(path: string): UserCliManifest | null {
-  if (!existsSync(path)) return null;
+  if (!existsSync(path)) {
+    return null;
+  }
   try {
     const raw = readFileSync(path, "utf-8");
     const parsed = JSON.parse(raw) as unknown;
-    if (!parsed || typeof parsed !== "object") return null;
+    if (!parsed || typeof parsed !== "object") {
+      return null;
+    }
     return parsed as UserCliManifest;
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
@@ -70,7 +74,9 @@ function loadManifest(path: string): UserCliManifest | null {
 function runPassthrough(exec: string, forwardedArgs: readonly string[]): Promise<number> {
   const parts = exec.trim().split(/\s+/);
   const [cmd, ...baseArgs] = parts;
-  if (!cmd) return Promise.resolve(1);
+  if (!cmd) {
+    return Promise.resolve(1);
+  }
   return new Promise((resolve) => {
     const proc = spawn(cmd, [...baseArgs, ...forwardedArgs], { stdio: "inherit" });
     proc.on("close", (code) => resolve(typeof code === "number" ? code : 1));
@@ -88,12 +94,20 @@ function runPassthrough(exec: string, forwardedArgs: readonly string[]): Promise
  * the time Commander parses argv — no async race with `.parse()`.
  */
 export function registerUserCliExtensions(program: Command, _ctx: ProgramContext): void {
-  if (shouldSkipExtensions()) return;
+  if (shouldSkipExtensions()) {
+    return;
+  }
   const manifest = loadManifest(getUserCliManifestPath());
-  if (!manifest?.commands) return;
+  if (!manifest?.commands) {
+    return;
+  }
   for (const [name, entry] of Object.entries(manifest.commands)) {
-    if (!entry || typeof entry.exec !== "string" || entry.exec.trim().length === 0) continue;
-    if (program.commands.some((c) => c.name() === name)) continue; // do not shadow core
+    if (!entry || typeof entry.exec !== "string" || entry.exec.trim().length === 0) {
+      continue;
+    }
+    if (program.commands.some((c) => c.name() === name)) {
+      continue;
+    } // do not shadow core
     program
       .command(name)
       .description(entry.description ?? `user extension: ${entry.exec}`)
